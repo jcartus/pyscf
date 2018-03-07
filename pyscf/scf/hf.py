@@ -77,6 +77,9 @@ def kernel(mf, conv_tol=1e-10, conv_tol_grad=None,
         mo_occ : 1D array
             Orbital occupancies.  The occupancies may NOT be sorted from large
             to small.
+        iterations : int
+            Number of iterations needed by scf calculation. Only returned if
+            return_iterations is set True.
 
     Examples:
 
