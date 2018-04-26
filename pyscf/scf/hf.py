@@ -288,7 +288,7 @@ def init_guess_by_minao(mol):
         basis_add = gto.basis.load('ano', stdsymb)
         occ = []
         basis_ano = []
-# coreshl defines the core shells to be removed in the initial guess
+        # coreshl defines the core shells to be removed in the initial guess
         coreshl = gto.ecp.core_configuration(nelec_ecp)
         #coreshl = (0,0,0,0)  # it keeps all core electrons in the initial guess
         for l in range(4):
@@ -339,9 +339,9 @@ def init_guess_by_minao(mol):
                              'be used.', nelec_valence_left, symb)
                 return occ, basis_ano
 
-# Compared to ANO valence basis, to check whether the ECP basis set has
-# reasonable AO-character contraction.  The ANO valence AO should have
-# significant overlap to ECP basis if the ECP basis has AO-character.
+            # Compared to ANO valence basis, to check whether the ECP basis set has
+            # reasonable AO-character contraction.  The ANO valence AO should have
+            # significant overlap to ECP basis if the ECP basis has AO-character.
             atm1 = gto.Mole()
             atm2 = gto.Mole()
             atom = [[symb, (0.,0.,0.)]]
@@ -385,11 +385,36 @@ def init_guess_by_minao(mol):
     c = addons.project_mo_nr2nr(pmol, 1, mol)
 
     dm = numpy.dot(c*occ, c.T)
-# normalize eletron number
-#    s = mol.intor_symmetric('int1e_ovlp')
-#    dm *= mol.nelectron / (dm*s).sum()
+    # normalize eletron number
+    #    s = mol.intor_symmetric('int1e_ovlp')
+    #    dm *= mol.nelectron / (dm*s).sum()
     return dm
 
+
+def init_guess_by_wolfsberg_helmholtz(mol):
+    """Diagnal will be taken from core hamiltonian, the off diagonal elements
+    are interpolated by wolfsgerg helmholtz scheme. 
+    
+        H_ji = k_ji (H_ii + H_ij) S_ij / 2, with k_ij =1.75
+    
+    (Generalized Wolsber Helmholtz GWH). See here:
+    http://www.q-chem.com/qchem-website/manual/qchem50_manual/sect-initialguess.html
+
+    M. Wolfsberg and L. Helmholtz, J. Chem. Phys. 20, 837 (1952). 
+    """
+
+    H = numpy.diag(get_hcore(mol))
+
+    k = numpy.ones((len(H), len(H))) * 1.75 - \
+        numpy.diag(numpy.ones(H.shape)) * 0.75  
+    S = get_ovlp(mol)
+
+    H = k * numpy.add.outer(H) * S / 2
+
+    mo_energy, mo_coeff = eig(H, S)
+    mo_occ = get_occ(SCF(mol), mo_energy, mo_coeff)
+    
+    return make_rdm1(mo_coeff, mo_occ)
 
 def init_guess_by_1e(mol):
     '''Generate initial guess density matrix from core hamiltonian
