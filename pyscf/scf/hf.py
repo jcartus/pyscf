@@ -409,7 +409,7 @@ def init_guess_by_wolfsberg_helmholtz(mol):
         numpy.diag(numpy.ones(H.shape)) * 0.75  
     S = get_ovlp(mol)
 
-    H = k * numpy.add.outer(H) * S / 2
+    H = k * numpy.add.outer(H, H) * S / 2
 
     mo_energy, mo_coeff = eig(H, S)
     mo_occ = get_occ(SCF(mol), mo_energy, mo_coeff)
