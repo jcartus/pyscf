@@ -126,6 +126,9 @@ Keyword argument "init_dm" is replaced by "dm0"''')
     e_tot = mf.energy_tot(dm, h1e, vhf)
     logger.info(mf, 'init E= %.15g', e_tot)
 
+    if mf.log_scf_energies != False:
+        mf.log_scf_energies = [e_tot]
+
     if dump_chk:
         # Explicit overwrite the mol object in chkfile
         # Note in pbc.scf, mf.mol == mf.cell, cell is saved under key "mol"
@@ -146,6 +149,9 @@ Keyword argument "init_dm" is replaced by "dm0"''')
         dm = lib.tag_array(dm, mo_coeff=mo_coeff, mo_occ=mo_occ)
         vhf = mf.get_veff(mol, dm, dm_last, vhf)
         e_tot = mf.energy_tot(dm, h1e, vhf)
+
+        if mf.log_scf_energies:
+            mf.log_scf_energies.append(e_tot)
 
         fock = mf.get_fock(h1e, s1e, vhf, dm)  # = h1e + vhf, no DIIS
         norm_gorb = numpy.linalg.norm(mf.get_grad(mo_coeff, mo_occ, fock))
@@ -1177,6 +1183,9 @@ class SCF(lib.StreamObject):
         self.direct_scf = True
         self.direct_scf_tol = 1e-13
         self.conv_check = True
+
+        self.log_scf_energies = False
+
 ##################################################
 # don't modify the following attributes, they are not input options
         self.mo_energy = None
@@ -1591,16 +1600,19 @@ class RHF(SCF):
 
 if __name__ == '__main__':
     mol = gto.Mole()
-    mol.verbose = 5
+    mol.verbose = 1
     mol.output = None
 
-    mol.atom = [['He', (0, 0, 0)], ]
-    mol.basis = 'ccpvdz'
+    mol.atom = [['H', (0, 0, 0)], ['C', (1, 0, 0)], ['C', (3, 0, 0)], ['H', (4, 0, 0)]]
+    mol.basis = 'sto-3g'
     mol.build()
 
 ##############
 # SCF result
     method = RHF(mol)
     method.init_guess = '1e'
+    method.diis = None
+    method.diis_start_cycle = 1000
+    method.damp = 0.03
     energy = method.scf()
-    print(energy)
+    print(method.iterations)
